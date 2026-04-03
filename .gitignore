@@ -17,7 +17,6 @@ venv/
 env/
 
 # Environment / secrets
-.env
 *.env.local
 
 # Type checking
