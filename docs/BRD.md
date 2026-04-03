@@ -53,7 +53,7 @@ from a short audio sample.
 - AcoustID lookup for audio-based source attribution
 - Visual pHash computation as fallback stub (imagehash)
 - Per-segment `SegmentResult` output with source, confidence, timestamp
-- CLI entrypoint: `python -m traceback.pipeline <clip>`
+- CLI entrypoint: `python -m tb.pipeline <clip>`
 
 ### Out of Scope (PoC)
 

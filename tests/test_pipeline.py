@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 import acoustid
 import pytest
 
-from traceback.models import AcoustIDMatch, FingerprintResult, Segment, SegmentResult
+from tb.models import AcoustIDMatch, FingerprintResult, Segment, SegmentResult
 
 
 def _make_segment(index: int = 0, duration: float = 15.0) -> Segment:
@@ -28,12 +28,12 @@ def _make_match(score: float = 0.95) -> AcoustIDMatch:
     )
 
 
-@patch("traceback.pipeline.compute_phash")
-@patch("traceback.pipeline.extract_frame")
-@patch("traceback.pipeline.lookup_fingerprint")
-@patch("traceback.pipeline.fingerprint_audio")
-@patch("traceback.pipeline.extract_segment_audio")
-@patch("traceback.pipeline.detect_segments")
+@patch("tb.pipeline.compute_phash")
+@patch("tb.pipeline.extract_frame")
+@patch("tb.pipeline.lookup_fingerprint")
+@patch("tb.pipeline.fingerprint_audio")
+@patch("tb.pipeline.extract_segment_audio")
+@patch("tb.pipeline.detect_segments")
 def test_pipeline_happy_path(
     mock_detect: MagicMock,
     mock_extract_audio: MagicMock,
@@ -55,7 +55,7 @@ def test_pipeline_happy_path(
     video = tmp_path / "video.mp4"
     video.touch()
 
-    from traceback.pipeline import run
+    from tb.pipeline import run
     results = run(video, api_key="test_key")
 
     assert len(results) == 1
@@ -65,12 +65,12 @@ def test_pipeline_happy_path(
     mock_extract_frame.assert_not_called()  # no visual fallback needed
 
 
-@patch("traceback.pipeline.compute_phash")
-@patch("traceback.pipeline.extract_frame")
-@patch("traceback.pipeline.lookup_fingerprint")
-@patch("traceback.pipeline.fingerprint_audio")
-@patch("traceback.pipeline.extract_segment_audio")
-@patch("traceback.pipeline.detect_segments")
+@patch("tb.pipeline.compute_phash")
+@patch("tb.pipeline.extract_frame")
+@patch("tb.pipeline.lookup_fingerprint")
+@patch("tb.pipeline.fingerprint_audio")
+@patch("tb.pipeline.extract_segment_audio")
+@patch("tb.pipeline.detect_segments")
 def test_pipeline_silent_clip_triggers_visual_fallback(
     mock_detect: MagicMock,
     mock_extract_audio: MagicMock,
@@ -89,7 +89,7 @@ def test_pipeline_silent_clip_triggers_visual_fallback(
     video = tmp_path / "video.mp4"
     video.touch()
 
-    from traceback.pipeline import run
+    from tb.pipeline import run
     results = run(video, api_key="test_key")
 
     assert len(results) == 1
@@ -106,7 +106,7 @@ def test_pipeline_raises_without_api_key(tmp_path: Path) -> None:
     import os
     env_backup = os.environ.pop("ACOUSTID_API_KEY", None)
     try:
-        from traceback.pipeline import run
+        from tb.pipeline import run
         with pytest.raises(ValueError, match="ACOUSTID_API_KEY"):
             run(video, api_key=None)
     finally:
@@ -115,6 +115,6 @@ def test_pipeline_raises_without_api_key(tmp_path: Path) -> None:
 
 
 def test_pipeline_raises_for_missing_file() -> None:
-    from traceback.pipeline import run
+    from tb.pipeline import run
     with pytest.raises(FileNotFoundError):
         run(Path("/nonexistent/video.mp4"), api_key="test_key")

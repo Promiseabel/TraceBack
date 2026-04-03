@@ -8,11 +8,11 @@ from unittest.mock import MagicMock, patch
 import imagehash
 import pytest
 
-from traceback.visual import NEAR_DUPLICATE_THRESHOLD, compare_phash, compute_phash
+from tb.visual import NEAR_DUPLICATE_THRESHOLD, compare_phash, compute_phash
 
 
-@patch("traceback.visual.imagehash.phash")
-@patch("traceback.visual.Image.open")
+@patch("tb.visual.imagehash.phash")
+@patch("tb.visual.Image.open")
 def test_compute_phash_returns_string(mock_open: MagicMock, mock_phash: MagicMock) -> None:
     mock_phash.return_value = imagehash.hex_to_hash("f8f0e0c0808080c0")
     result = compute_phash(Path("/tmp/frame.png"))
@@ -20,8 +20,8 @@ def test_compute_phash_returns_string(mock_open: MagicMock, mock_phash: MagicMoc
     assert len(result) > 0
 
 
-@patch("traceback.visual.imagehash.phash")
-@patch("traceback.visual.Image.open")
+@patch("tb.visual.imagehash.phash")
+@patch("tb.visual.Image.open")
 def test_compute_phash_opens_image_not_passes_path(mock_open: MagicMock, mock_phash: MagicMock) -> None:
     """Guard: imagehash.phash() must receive PIL Image, not a path string."""
     mock_phash.return_value = imagehash.hex_to_hash("f8f0e0c0808080c0")

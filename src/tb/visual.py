@@ -11,9 +11,10 @@ imagehash usage (confirmed):
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import imagehash
 from PIL import Image
-from pathlib import Path
 
 NEAR_DUPLICATE_THRESHOLD: int = 5   # Hamming distance <= 5
 LIKELY_MATCH_THRESHOLD: int = 10    # Hamming distance <= 10

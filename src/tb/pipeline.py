@@ -18,12 +18,12 @@ from pathlib import Path
 
 import acoustid
 
-from traceback.extractor import extract_frame, extract_segment_audio
-from traceback.fingerprinter import fingerprint_audio
-from traceback.lookup import lookup_fingerprint
-from traceback.models import SegmentResult
-from traceback.segmenter import MIN_SEGMENT_DURATION, detect_segments
-from traceback.visual import compute_phash
+from tb.extractor import extract_frame, extract_segment_audio
+from tb.fingerprinter import fingerprint_audio
+from tb.lookup import lookup_fingerprint
+from tb.models import SegmentResult
+from tb.segmenter import MIN_SEGMENT_DURATION, detect_segments
+from tb.visual import compute_phash
 
 logger = logging.getLogger(__name__)
 

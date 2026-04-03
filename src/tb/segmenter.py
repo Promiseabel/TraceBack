@@ -16,7 +16,7 @@ from pathlib import Path
 from scenedetect import SceneManager, open_video
 from scenedetect.detectors import ContentDetector
 
-from traceback.models import Segment
+from tb.models import Segment
 
 logger = logging.getLogger(__name__)
 

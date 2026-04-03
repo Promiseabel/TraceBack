@@ -139,7 +139,49 @@ This category tests graceful degradation.
 
 | Date | Passed | Failed | Errors | Notes |
 |---|---|---|---|---|
-| — | — | — | — | Not yet run |
+| 2026-04-03 | 25 | 0 | 0 | Phase 0 baseline — all unit tests passing |
+
+---
+
+## Phase 0 Environment Report
+Date: 2026-04-03
+
+System:
+  OS: linux (Ubuntu 24.04 / noble)
+  Python: 3.11.15
+  ffmpeg: 7.0.2-static (via imageio-ffmpeg bundled binary, symlinked to /usr/local/bin/ffmpeg)
+  fpcalc (Chromaprint): 1.5.1 (static binary from github.com/acoustid/chromaprint, at /usr/local/bin/fpcalc)
+
+Python packages:
+  pyacoustid: 1.3.0
+  scenedetect: 0.6.7.1
+  imagehash: 4.3.2
+  Pillow: 12.2.0
+  OpenCV: 4.13.0.92
+
+Environment:
+  ACOUSTID_API_KEY: SET
+  fpcalc accessible to pyacoustid: YES (verified with 10s sine-wave fixture)
+
+Test suite:
+  Total tests: 25
+  Passed: 25
+  Failed (expected skeleton): 0
+  Errors (must be zero): 0
+
+Lint baseline:
+  ruff issues: 0 (2 fixed during Phase 0 — import order + line length)
+  mypy errors: 0 (--ignore-missing-imports; all 8 source files clean)
+
+Notes:
+  - Package renamed from `traceback` → `tb` to avoid stdlib name collision
+    (Python stdlib has a `traceback` module which shadowed our package)
+  - ffmpeg and fpcalc installed via pip/GitHub static binary rather than apt
+    (Ubuntu archive was unreachable during Phase 0)
+  - pyproject.toml build-backend corrected from `setuptools.backends.legacy:build`
+    to `setuptools.build_meta` for compatibility
+
+Phase 0 status: COMPLETE
 
 ---
 

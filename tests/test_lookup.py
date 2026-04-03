@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 import acoustid
 import pytest
 
-from traceback.lookup import CONFIDENCE_THRESHOLD, lookup_fingerprint
-from traceback.models import AcoustIDMatch, FingerprintResult, Segment
+from tb.lookup import CONFIDENCE_THRESHOLD, lookup_fingerprint
+from tb.models import AcoustIDMatch, FingerprintResult, Segment
 
 
 def _make_fp() -> FingerprintResult:
@@ -36,8 +36,8 @@ def _make_acoustid_response(score: float = 0.98) -> dict:
     }
 
 
-@patch("traceback.lookup.time.sleep")
-@patch("traceback.lookup.acoustid.lookup")
+@patch("tb.lookup.time.sleep")
+@patch("tb.lookup.acoustid.lookup")
 def test_lookup_happy_path(mock_lookup: MagicMock, mock_sleep: MagicMock) -> None:
     mock_lookup.return_value = _make_acoustid_response(score=0.98)
     matches = lookup_fingerprint(_make_fp(), "test_api_key")
@@ -48,24 +48,24 @@ def test_lookup_happy_path(mock_lookup: MagicMock, mock_sleep: MagicMock) -> Non
     assert isinstance(matches[0], AcoustIDMatch)
 
 
-@patch("traceback.lookup.time.sleep")
-@patch("traceback.lookup.acoustid.lookup")
+@patch("tb.lookup.time.sleep")
+@patch("tb.lookup.acoustid.lookup")
 def test_low_score_filtered_out(mock_lookup: MagicMock, mock_sleep: MagicMock) -> None:
     mock_lookup.return_value = _make_acoustid_response(score=0.5)
     matches = lookup_fingerprint(_make_fp(), "test_api_key")
     assert matches == []
 
 
-@patch("traceback.lookup.time.sleep")
-@patch("traceback.lookup.acoustid.lookup")
+@patch("tb.lookup.time.sleep")
+@patch("tb.lookup.acoustid.lookup")
 def test_api_error_returns_empty_list(mock_lookup: MagicMock, mock_sleep: MagicMock) -> None:
     mock_lookup.side_effect = acoustid.WebServiceError("connection refused")
     matches = lookup_fingerprint(_make_fp(), "test_api_key")
     assert matches == []
 
 
-@patch("traceback.lookup.time.sleep")
-@patch("traceback.lookup.acoustid.lookup")
+@patch("tb.lookup.time.sleep")
+@patch("tb.lookup.acoustid.lookup")
 def test_rate_limit_sleep_called(mock_lookup: MagicMock, mock_sleep: MagicMock) -> None:
     mock_lookup.return_value = _make_acoustid_response()
     lookup_fingerprint(_make_fp(), "test_api_key")
@@ -75,11 +75,28 @@ def test_rate_limit_sleep_called(mock_lookup: MagicMock, mock_sleep: MagicMock) 
     assert abs(delay - (1.0 / 3.0)) < 0.01
 
 
-@patch("traceback.lookup.time.sleep")
-@patch("traceback.lookup.acoustid.lookup")
+@patch("tb.lookup.time.sleep")
+@patch("tb.lookup.acoustid.lookup")
 def test_uses_score_field_not_confidence(mock_lookup: MagicMock, mock_sleep: MagicMock) -> None:
-    """Guard: confidence field must be 'score', not 'confidence' or 'probability'."""
-    source = Path("src/traceback/lookup.py").read_text()
-    assert '"score"' in source or "'score'" in source
-    assert '"confidence"' not in source
-    assert '"probability"' not in source
+    """Guard: code must use result['score'], not result['confidence'] or result['probability']."""
+    import ast as ast_mod
+    source = Path("src/tb/lookup.py").read_text()
+    tree = ast_mod.parse(source)
+    # Collect all string keys used in subscript operations: result["key"] or .get("key")
+    subscript_keys: set[str] = set()
+    for node in ast_mod.walk(tree):
+        # result["key"] pattern
+        if isinstance(node, ast_mod.Subscript) and isinstance(node.slice, ast_mod.Constant):
+            subscript_keys.add(node.slice.value)
+        # .get("key") pattern
+        if (
+            isinstance(node, ast_mod.Call)
+            and isinstance(node.func, ast_mod.Attribute)
+            and node.func.attr == "get"
+            and node.args
+            and isinstance(node.args[0], ast_mod.Constant)
+        ):
+            subscript_keys.add(node.args[0].value)
+    assert "score" in subscript_keys, "Must use result['score'] for confidence"
+    assert "confidence" not in subscript_keys, "Must NOT use result['confidence']"
+    assert "probability" not in subscript_keys, "Must NOT use result['probability']"

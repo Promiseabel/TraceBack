@@ -172,7 +172,7 @@ Uses PySceneDetect 0.6.x. **`VideoManager` must never appear here.**
 from pathlib import Path
 from scenedetect import open_video, SceneManager
 from scenedetect.detectors import ContentDetector
-from traceback.models import Segment
+from tb.models import Segment
 
 MIN_SEGMENT_DURATION: float = 7.0  # seconds — Chromaprint constraint
 
@@ -210,7 +210,7 @@ Thin wrapper around pyacoustid. Does not call any network service.
 ```python
 from pathlib import Path
 import acoustid
-from traceback.models import Segment, FingerprintResult
+from tb.models import Segment, FingerprintResult
 
 def fingerprint_audio(audio_path: Path) -> FingerprintResult:
     """Fingerprint an audio file using Chromaprint via pyacoustid.
@@ -242,7 +242,7 @@ The ONLY module that makes network calls. Enforces 3 req/sec rate limit.
 from pathlib import Path
 import time
 import acoustid
-from traceback.models import FingerprintResult, AcoustIDMatch
+from tb.models import FingerprintResult, AcoustIDMatch
 
 CONFIDENCE_THRESHOLD: float = 0.7
 RATE_LIMIT_DELAY: float = 1.0 / 3.0  # 3 requests per second
@@ -334,12 +334,12 @@ import os
 import tempfile
 from pathlib import Path
 
-from traceback.extractor import extract_segment_audio, extract_frame
-from traceback.fingerprinter import fingerprint_audio
-from traceback.lookup import lookup_fingerprint
-from traceback.models import SegmentResult
-from traceback.segmenter import detect_segments
-from traceback.visual import compute_phash
+from tb.extractor import extract_segment_audio, extract_frame
+from tb.fingerprinter import fingerprint_audio
+from tb.lookup import lookup_fingerprint
+from tb.models import SegmentResult
+from tb.segmenter import detect_segments
+from tb.visual import compute_phash
 
 logger = logging.getLogger(__name__)
 
@@ -375,11 +375,11 @@ def run(video_path: Path, api_key: str | None = None) -> list[SegmentResult]:
 ```python
 import sys
 from pathlib import Path
-from traceback.pipeline import run
+from tb.pipeline import run
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python -m traceback.pipeline <path_to_clip>")
+        print("Usage: python -m tb.pipeline <path_to_clip>")
         sys.exit(1)
     results = run(Path(sys.argv[1]))
     for r in results:
@@ -480,7 +480,7 @@ For each category in `TEST_PLAN.md`, prepare test clips with known provenance:
 
 ```bash
 for clip in test_clips/*.mp4; do
-    python -m traceback.pipeline "$clip"
+    python -m tb.pipeline "$clip"
 done
 ```
 
@@ -533,7 +533,7 @@ python -m ruff check src/ tests/
 python -m mypy src/ --strict
 
 # Pipeline runs
-python -m traceback.pipeline <test_clip>
+python -m tb.pipeline <test_clip>
 ```
 
 ### Exit Criteria for Phase 4

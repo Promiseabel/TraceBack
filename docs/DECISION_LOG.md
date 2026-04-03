@@ -181,3 +181,57 @@ is still below 7 seconds, skip fingerprinting and log a warning.
 ---
 
 *Add new entries below this line. Use the format: Entry NNN — Title.*
+
+---
+
+## Entry 006 — Python Package Name: `tb` (not `traceback`)
+
+**Date**: 2026-04-03  
+**Status**: Active
+
+### Context
+During Phase 0 environment setup, all test collection failed with:
+`ModuleNotFoundError: No module named 'traceback.extractor'; 'traceback' is not a package`
+The root cause: Python's standard library contains a module named `traceback` (a single `.py`
+file at `/usr/lib/python3.11/traceback.py`). When `import traceback.extractor` is attempted,
+Python resolves `traceback` to the stdlib module (not our package) and fails.
+
+### Decision
+Rename the Python package from `traceback` to `tb` (short for Traceback).
+All imports updated: `from tb.pipeline import run`, `python -m tb.pipeline`, etc.
+The project name remains "Traceback" — only the importable Python package name changes.
+
+### Rationale
+`traceback` is a reserved stdlib module name. Any package with this name will fail to import
+in any Python environment. Renaming is required, not optional.
+
+### Alternatives Considered
+- **Namespace package** (`traceback_project.pipeline`): Verbose and breaks the clean API.
+- **src-only install trick**: Would not fix the stdlib collision.
+- **`tracebackpipeline`**: Valid but long. `tb` is cleaner and unambiguous in this project.
+
+### Consequences
+- All imports use `from tb.xxx import ...`
+- CLI entrypoint is `python -m tb.pipeline`
+- CLAUDE.md, AGENTS.md, BUILD.md, all docs, all agent files updated
+- pyproject.toml `name = "tb"`
+
+---
+
+## Entry 007 — Phase 0 Lint/Type Baseline
+
+**Date**: 2026-04-03  
+**Status**: Active
+
+### Context
+Phase 0 step 9 established the lint and type baseline before any pipeline logic was written.
+
+### Findings
+- **ruff**: 2 issues found, both auto-fixed:
+  - `E501` — 1 line in extractor.py docstring exceeded 100 chars (ffmpeg command example)
+  - `I001` — import block unsorted in visual.py (auto-fixed by `ruff --fix`)
+- **mypy** (`--ignore-missing-imports`): 0 errors across all 8 source files
+
+### Decision
+Target state for all subsequent phases: ruff exits 0, mypy exits 0.
+Phase 0 ended with both tools clean.

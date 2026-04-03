@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from traceback.models import Segment
-from traceback.segmenter import MIN_SEGMENT_DURATION, detect_segments
+from tb.models import Segment
+from tb.segmenter import MIN_SEGMENT_DURATION, detect_segments
 
 
 def _make_timecode(seconds: float) -> MagicMock:
@@ -15,8 +15,8 @@ def _make_timecode(seconds: float) -> MagicMock:
     return tc
 
 
-@patch("traceback.segmenter.SceneManager")
-@patch("traceback.segmenter.open_video")
+@patch("tb.segmenter.SceneManager")
+@patch("tb.segmenter.open_video")
 def test_detect_segments_two_cuts(mock_open_video: MagicMock, mock_scene_manager_cls: MagicMock) -> None:
     scene_manager = MagicMock()
     mock_scene_manager_cls.return_value = scene_manager
@@ -35,8 +35,8 @@ def test_detect_segments_two_cuts(mock_open_video: MagicMock, mock_scene_manager
     assert segments[1].index == 1
 
 
-@patch("traceback.segmenter.SceneManager")
-@patch("traceback.segmenter.open_video")
+@patch("tb.segmenter.SceneManager")
+@patch("tb.segmenter.open_video")
 def test_no_cuts_returns_single_segment(mock_open_video: MagicMock, mock_scene_manager_cls: MagicMock) -> None:
     scene_manager = MagicMock()
     mock_scene_manager_cls.return_value = scene_manager
@@ -51,8 +51,8 @@ def test_no_cuts_returns_single_segment(mock_open_video: MagicMock, mock_scene_m
     assert segments[0].start_time == 0.0
 
 
-@patch("traceback.segmenter.SceneManager")
-@patch("traceback.segmenter.open_video")
+@patch("tb.segmenter.SceneManager")
+@patch("tb.segmenter.open_video")
 def test_short_segment_merged(mock_open_video: MagicMock, mock_scene_manager_cls: MagicMock) -> None:
     scene_manager = MagicMock()
     mock_scene_manager_cls.return_value = scene_manager
@@ -69,7 +69,17 @@ def test_short_segment_merged(mock_open_video: MagicMock, mock_scene_manager_cls
 
 def test_videomanager_not_imported() -> None:
     """Guard: VideoManager must not be imported (removed in PySceneDetect 0.6)."""
-    source = Path("src/traceback/segmenter.py").read_text()
-    assert "VideoManager" not in source, (
-        "VideoManager was removed in PySceneDetect 0.6 — must not be imported"
-    )
+    import ast as ast_mod
+    source = Path("src/tb/segmenter.py").read_text()
+    tree = ast_mod.parse(source)
+    for node in ast_mod.walk(tree):
+        if isinstance(node, ast_mod.ImportFrom):
+            imported_names = [alias.name for alias in node.names]
+            assert "VideoManager" not in imported_names, (
+                "VideoManager was removed in PySceneDetect 0.6 — must not be imported"
+            )
+        if isinstance(node, ast_mod.Import):
+            imported_names = [alias.name for alias in node.names]
+            assert "VideoManager" not in imported_names, (
+                "VideoManager was removed in PySceneDetect 0.6 — must not be imported"
+            )

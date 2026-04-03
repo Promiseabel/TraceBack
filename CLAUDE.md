@@ -35,7 +35,7 @@ python -m ruff check src/ tests/
 python -m mypy src/ --strict
 
 # Run pipeline on a clip
-python -m traceback.pipeline <path_to_clip>
+python -m tb.pipeline <path_to_clip>
 
 # Via slash command
 /run-pipeline <path_to_clip>

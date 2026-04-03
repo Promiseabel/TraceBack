@@ -19,7 +19,7 @@ import time
 
 import acoustid
 
-from traceback.models import AcoustIDMatch, FingerprintResult
+from tb.models import AcoustIDMatch, FingerprintResult
 
 logger = logging.getLogger(__name__)
 

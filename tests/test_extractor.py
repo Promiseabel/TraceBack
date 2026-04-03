@@ -8,10 +8,10 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from traceback.extractor import extract_frame, extract_full_audio, extract_segment_audio
+from tb.extractor import extract_frame, extract_full_audio, extract_segment_audio
 
 
-@patch("traceback.extractor.subprocess.run")
+@patch("tb.extractor.subprocess.run")
 def test_extract_full_audio_calls_correct_flags(mock_run: MagicMock) -> None:
     mock_run.return_value = MagicMock(returncode=0)
     result = extract_full_audio(Path("/tmp/video.mp4"), Path("/tmp/out.wav"))
@@ -23,7 +23,7 @@ def test_extract_full_audio_calls_correct_flags(mock_run: MagicMock) -> None:
     assert "-ar" in args and "44100" in args
 
 
-@patch("traceback.extractor.subprocess.run")
+@patch("tb.extractor.subprocess.run")
 def test_extract_segment_audio_uses_ss_and_to(mock_run: MagicMock) -> None:
     mock_run.return_value = MagicMock(returncode=0)
     extract_segment_audio(Path("/tmp/video.mp4"), 10.0, 20.0, Path("/tmp/seg.wav"))
@@ -34,7 +34,7 @@ def test_extract_segment_audio_uses_ss_and_to(mock_run: MagicMock) -> None:
     assert "20.0" in args
 
 
-@patch("traceback.extractor.subprocess.run")
+@patch("tb.extractor.subprocess.run")
 def test_extract_frame_ss_before_i(mock_run: MagicMock) -> None:
     """Verify -ss appears before -i for fast seeking."""
     mock_run.return_value = MagicMock(returncode=0)
@@ -47,7 +47,7 @@ def test_extract_frame_ss_before_i(mock_run: MagicMock) -> None:
     assert args.index("-ss") < args.index("-i")
 
 
-@patch("traceback.extractor.subprocess.run")
+@patch("tb.extractor.subprocess.run")
 def test_extract_full_audio_propagates_error(mock_run: MagicMock) -> None:
     mock_run.side_effect = subprocess.CalledProcessError(1, "ffmpeg")
     with pytest.raises(subprocess.CalledProcessError):

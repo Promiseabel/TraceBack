@@ -17,7 +17,7 @@ from pathlib import Path
 
 import acoustid
 
-from traceback.models import FingerprintResult, Segment
+from tb.models import FingerprintResult, Segment
 
 logger = logging.getLogger(__name__)
 

@@ -22,13 +22,13 @@ If any check fails, report the missing dependency and stop — do not attempt to
 ## Running the Pipeline
 
 ```bash
-python -m traceback.pipeline <clip_path>
+python -m tb.pipeline <clip_path>
 ```
 
 Or in Python:
 ```python
 from pathlib import Path
-from traceback.pipeline import run
+from tb.pipeline import run
 results = run(Path("<clip_path>"))
 ```
 
@@ -55,7 +55,7 @@ Each `SegmentResult` contains:
 
 Run modules individually to isolate failures:
 ```bash
-python -c "from traceback.extractor import extract_full_audio; from pathlib import Path; print(extract_full_audio(Path('clip.mp4'), Path('/tmp/out.wav')))"
+python -c "from tb.extractor import extract_full_audio; from pathlib import Path; print(extract_full_audio(Path('clip.mp4'), Path('/tmp/out.wav')))"
 ```
 
 After diagnosing, report:

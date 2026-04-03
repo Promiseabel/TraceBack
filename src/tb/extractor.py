@@ -5,7 +5,8 @@ Raises subprocess.CalledProcessError on ffmpeg failure — callers handle recove
 
 ffmpeg flag reference (confirmed standards):
   Full audio:    ffmpeg -i <video> -vn -acodec pcm_s16le -ac 2 -ar 44100 <output.wav>
-  Segment audio: ffmpeg -i <video> -ss <start> -to <end> -acodec pcm_s16le -ac 2 -ar 44100 <output.wav>
+  Segment audio: ffmpeg -i <video> -ss <start> -to <end>
+                 -acodec pcm_s16le -ac 2 -ar 44100 <output.wav>
   Keyframe:      ffmpeg -ss <timestamp> -i <video> -frames:v 1 <output.png>
   Note: -ss before -i for fast seeking on keyframe extraction.
 """
