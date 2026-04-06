@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tb.extractor import extract_frame, extract_full_audio, extract_segment_audio
+from tb.extractor import ExtractionError, extract_frame, extract_full_audio, extract_segment_audio
 
 
 @patch("tb.extractor.subprocess.run")
@@ -48,7 +48,30 @@ def test_extract_frame_ss_before_i(mock_run: MagicMock) -> None:
 
 
 @patch("tb.extractor.subprocess.run")
-def test_extract_full_audio_propagates_error(mock_run: MagicMock) -> None:
-    mock_run.side_effect = subprocess.CalledProcessError(1, "ffmpeg")
-    with pytest.raises(subprocess.CalledProcessError):
+def test_extract_full_audio_raises_extraction_error(mock_run: MagicMock) -> None:
+    mock_run.side_effect = subprocess.CalledProcessError(1, "ffmpeg", stderr=b"error detail")
+    with pytest.raises(ExtractionError):
         extract_full_audio(Path("/tmp/video.mp4"), Path("/tmp/out.wav"))
+
+
+@patch("tb.extractor.subprocess.run")
+def test_extract_segment_audio_raises_extraction_error(mock_run: MagicMock) -> None:
+    mock_run.side_effect = subprocess.CalledProcessError(1, "ffmpeg", stderr=b"error detail")
+    with pytest.raises(ExtractionError):
+        extract_segment_audio(Path("/tmp/video.mp4"), 0.0, 10.0, Path("/tmp/seg.wav"))
+
+
+@patch("tb.extractor.subprocess.run")
+def test_extract_frame_raises_extraction_error(mock_run: MagicMock) -> None:
+    mock_run.side_effect = subprocess.CalledProcessError(1, "ffmpeg", stderr=b"error detail")
+    with pytest.raises(ExtractionError):
+        extract_frame(Path("/tmp/video.mp4"), 5.0, Path("/tmp/frame.png"))
+
+
+@patch("tb.extractor.subprocess.run")
+def test_extraction_error_wraps_called_process_error(mock_run: MagicMock) -> None:
+    original = subprocess.CalledProcessError(1, "ffmpeg", stderr=b"codec error")
+    mock_run.side_effect = original
+    with pytest.raises(ExtractionError) as exc_info:
+        extract_full_audio(Path("/tmp/video.mp4"), Path("/tmp/out.wav"))
+    assert exc_info.value.__cause__ is original

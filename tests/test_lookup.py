@@ -6,9 +6,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import acoustid
-import pytest
 
-from tb.lookup import CONFIDENCE_THRESHOLD, lookup_fingerprint
+from tb.lookup import lookup_fingerprint
 from tb.models import AcoustIDMatch, FingerprintResult, Segment
 
 

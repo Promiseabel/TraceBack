@@ -1,7 +1,7 @@
 """Audio and frame extraction via ffmpeg subprocess calls.
 
 All ffmpeg interaction is isolated in this module. No other module may call ffmpeg directly.
-Raises subprocess.CalledProcessError on ffmpeg failure — callers handle recovery.
+Raises ExtractionError (wrapping subprocess.CalledProcessError) on ffmpeg failure.
 
 ffmpeg flag reference (confirmed standards):
   Full audio:    ffmpeg -i <video> -vn -acodec pcm_s16le -ac 2 -ar 44100 <output.wav>
@@ -17,6 +17,10 @@ import subprocess
 from pathlib import Path
 
 
+class ExtractionError(Exception):
+    """Raised when an ffmpeg extraction call fails."""
+
+
 def extract_full_audio(video_path: Path, output_path: Path) -> Path:
     """Extract full audio track from video as PCM WAV.
 
@@ -28,22 +32,28 @@ def extract_full_audio(video_path: Path, output_path: Path) -> Path:
         output_path (unchanged).
 
     Raises:
-        subprocess.CalledProcessError: If ffmpeg exits non-zero.
+        ExtractionError: If ffmpeg exits non-zero.
         FileNotFoundError: If ffmpeg is not on PATH.
     """
-    subprocess.run(
-        [
-            "ffmpeg", "-y",
-            "-i", str(video_path),
-            "-vn",
-            "-acodec", "pcm_s16le",
-            "-ac", "2",
-            "-ar", "44100",
-            str(output_path),
-        ],
-        check=True,
-        capture_output=True,
-    )
+    try:
+        subprocess.run(
+            [
+                "ffmpeg", "-y",
+                "-i", str(video_path),
+                "-vn",
+                "-acodec", "pcm_s16le",
+                "-ac", "2",
+                "-ar", "44100",
+                str(output_path),
+            ],
+            check=True,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise ExtractionError(
+            f"ffmpeg failed extracting audio from {video_path}: "
+            f"{exc.stderr.decode(errors='replace')}"
+        ) from exc
     return output_path
 
 
@@ -65,23 +75,29 @@ def extract_segment_audio(
         output_path (unchanged).
 
     Raises:
-        subprocess.CalledProcessError: If ffmpeg exits non-zero.
+        ExtractionError: If ffmpeg exits non-zero.
         FileNotFoundError: If ffmpeg is not on PATH.
     """
-    subprocess.run(
-        [
-            "ffmpeg", "-y",
-            "-i", str(video_path),
-            "-ss", str(start),
-            "-to", str(end),
-            "-acodec", "pcm_s16le",
-            "-ac", "2",
-            "-ar", "44100",
-            str(output_path),
-        ],
-        check=True,
-        capture_output=True,
-    )
+    try:
+        subprocess.run(
+            [
+                "ffmpeg", "-y",
+                "-i", str(video_path),
+                "-ss", str(start),
+                "-to", str(end),
+                "-acodec", "pcm_s16le",
+                "-ac", "2",
+                "-ar", "44100",
+                str(output_path),
+            ],
+            check=True,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise ExtractionError(
+            f"ffmpeg failed extracting segment audio from {video_path} "
+            f"[{start}s–{end}s]: {exc.stderr.decode(errors='replace')}"
+        ) from exc
     return output_path
 
 
@@ -99,18 +115,24 @@ def extract_frame(video_path: Path, timestamp: float, output_path: Path) -> Path
         output_path (unchanged).
 
     Raises:
-        subprocess.CalledProcessError: If ffmpeg exits non-zero.
+        ExtractionError: If ffmpeg exits non-zero.
         FileNotFoundError: If ffmpeg is not on PATH.
     """
-    subprocess.run(
-        [
-            "ffmpeg", "-y",
-            "-ss", str(timestamp),
-            "-i", str(video_path),
-            "-frames:v", "1",
-            str(output_path),
-        ],
-        check=True,
-        capture_output=True,
-    )
+    try:
+        subprocess.run(
+            [
+                "ffmpeg", "-y",
+                "-ss", str(timestamp),
+                "-i", str(video_path),
+                "-frames:v", "1",
+                str(output_path),
+            ],
+            check=True,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise ExtractionError(
+            f"ffmpeg failed extracting frame from {video_path} at {timestamp}s: "
+            f"{exc.stderr.decode(errors='replace')}"
+        ) from exc
     return output_path

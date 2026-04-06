@@ -5,8 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from tb.models import Segment
-from tb.segmenter import MIN_SEGMENT_DURATION, detect_segments
+from tb.segmenter import detect_segments
 
 
 def _make_timecode(seconds: float) -> MagicMock:
@@ -17,7 +16,9 @@ def _make_timecode(seconds: float) -> MagicMock:
 
 @patch("tb.segmenter.SceneManager")
 @patch("tb.segmenter.open_video")
-def test_detect_segments_two_cuts(mock_open_video: MagicMock, mock_scene_manager_cls: MagicMock) -> None:
+def test_detect_segments_two_cuts(
+    mock_open_video: MagicMock, mock_scene_manager_cls: MagicMock
+) -> None:
     scene_manager = MagicMock()
     mock_scene_manager_cls.return_value = scene_manager
     # Two scenes: 0–10s, 10–25s
@@ -37,7 +38,9 @@ def test_detect_segments_two_cuts(mock_open_video: MagicMock, mock_scene_manager
 
 @patch("tb.segmenter.SceneManager")
 @patch("tb.segmenter.open_video")
-def test_no_cuts_returns_single_segment(mock_open_video: MagicMock, mock_scene_manager_cls: MagicMock) -> None:
+def test_no_cuts_returns_single_segment(
+    mock_open_video: MagicMock, mock_scene_manager_cls: MagicMock
+) -> None:
     scene_manager = MagicMock()
     mock_scene_manager_cls.return_value = scene_manager
     scene_manager.get_scene_list.return_value = []
@@ -53,7 +56,9 @@ def test_no_cuts_returns_single_segment(mock_open_video: MagicMock, mock_scene_m
 
 @patch("tb.segmenter.SceneManager")
 @patch("tb.segmenter.open_video")
-def test_short_segment_merged(mock_open_video: MagicMock, mock_scene_manager_cls: MagicMock) -> None:
+def test_short_segment_merged(
+    mock_open_video: MagicMock, mock_scene_manager_cls: MagicMock
+) -> None:
     scene_manager = MagicMock()
     mock_scene_manager_cls.return_value = scene_manager
     # First segment is 3s (below 7s minimum) — should be merged with second

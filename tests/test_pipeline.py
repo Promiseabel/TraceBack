@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 import acoustid
 import pytest
 
-from tb.models import AcoustIDMatch, FingerprintResult, Segment, SegmentResult
+from tb.models import AcoustIDMatch, FingerprintResult, PipelineResult, Segment
 
 
 def _make_segment(index: int = 0, duration: float = 15.0) -> Segment:
@@ -56,12 +56,15 @@ def test_pipeline_happy_path(
     video.touch()
 
     from tb.pipeline import run
-    results = run(video, api_key="test_key")
+    pipeline_result = run(video, api_key="test_key")
 
-    assert len(results) == 1
-    assert results[0].best_match is match
-    assert results[0].source == "Test Artist — Test Track"
-    assert results[0].confidence == 0.95
+    assert isinstance(pipeline_result, PipelineResult)
+    assert len(pipeline_result.matches) == 1
+    r = pipeline_result.matches[0]
+    assert r.best_match is match
+    assert r.source == "Test Artist — Test Track"
+    assert r.confidence == 0.95
+    assert r.method == "audio"
     mock_extract_frame.assert_not_called()  # no visual fallback needed
 
 
@@ -90,12 +93,15 @@ def test_pipeline_silent_clip_triggers_visual_fallback(
     video.touch()
 
     from tb.pipeline import run
-    results = run(video, api_key="test_key")
+    pipeline_result = run(video, api_key="test_key")
 
-    assert len(results) == 1
-    assert results[0].best_match is None
-    assert results[0].visual_hash == "f8f0e0c0808080c0"
-    assert results[0].confidence == 0.0
+    assert isinstance(pipeline_result, PipelineResult)
+    assert len(pipeline_result.matches) == 1
+    r = pipeline_result.matches[0]
+    assert r.best_match is None
+    assert r.visual_hash == "f8f0e0c0808080c0"
+    assert r.confidence == 0.0
+    assert r.method == "visual"
     mock_extract_frame.assert_called_once()
 
 
@@ -118,3 +124,39 @@ def test_pipeline_raises_for_missing_file() -> None:
     from tb.pipeline import run
     with pytest.raises(FileNotFoundError):
         run(Path("/nonexistent/video.mp4"), api_key="test_key")
+
+
+@patch("tb.pipeline.compute_phash")
+@patch("tb.pipeline.extract_frame")
+@patch("tb.pipeline.lookup_fingerprint")
+@patch("tb.pipeline.fingerprint_audio")
+@patch("tb.pipeline.extract_segment_audio")
+@patch("tb.pipeline.detect_segments")
+def test_pipeline_result_accuracy(
+    mock_detect: MagicMock,
+    mock_extract_audio: MagicMock,
+    mock_fingerprint: MagicMock,
+    mock_lookup: MagicMock,
+    mock_extract_frame: MagicMock,
+    mock_phash: MagicMock,
+    tmp_path: Path,
+) -> None:
+    """PipelineResult.accuracy reflects the matched fraction."""
+    seg = _make_segment()
+    fp = _make_fp(seg)
+    match = _make_match()
+
+    mock_detect.return_value = [seg]
+    mock_extract_audio.return_value = tmp_path / "seg_0.wav"
+    mock_fingerprint.return_value = fp
+    mock_lookup.return_value = [match]
+
+    video = tmp_path / "video.mp4"
+    video.touch()
+
+    from tb.pipeline import run
+    pipeline_result = run(video, api_key="test_key")
+
+    assert pipeline_result.total_segments == 1
+    assert pipeline_result.matched_count == 1
+    assert pipeline_result.accuracy == 1.0

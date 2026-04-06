@@ -5,7 +5,7 @@ and sequences all module calls in order:
   segmenter → extractor → fingerprinter → lookup → visual fallback (if needed)
 
 CLI usage:
-  python -m traceback.pipeline <path_to_clip>
+  python -m tb.pipeline <path_to_clip>
 """
 
 from __future__ import annotations
@@ -18,17 +18,17 @@ from pathlib import Path
 
 import acoustid
 
-from tb.extractor import extract_frame, extract_segment_audio
+from tb.extractor import ExtractionError, extract_frame, extract_segment_audio
 from tb.fingerprinter import fingerprint_audio
 from tb.lookup import lookup_fingerprint
-from tb.models import SegmentResult
+from tb.models import PipelineResult, SegmentResult
 from tb.segmenter import MIN_SEGMENT_DURATION, detect_segments
 from tb.visual import compute_phash
 
 logger = logging.getLogger(__name__)
 
 
-def run(video_path: Path, api_key: str | None = None) -> list[SegmentResult]:
+def run(video_path: Path, api_key: str | None = None) -> PipelineResult:
     """Run the full Traceback pipeline against a video clip.
 
     Steps:
@@ -38,14 +38,14 @@ def run(video_path: Path, api_key: str | None = None) -> list[SegmentResult]:
          b. Fingerprint with Chromaprint
          c. Look up against AcoustID (score >= 0.7)
          d. If no match: extract keyframe, compute pHash (fallback stub)
-      3. Return list[SegmentResult]
+      3. Return PipelineResult
 
     Args:
         video_path: Path to the input video clip.
         api_key: AcoustID API key. If None, reads ACOUSTID_API_KEY from environment.
 
     Returns:
-        List of SegmentResult objects, one per detected segment.
+        PipelineResult with per-segment SegmentResult objects and summary stats.
 
     Raises:
         ValueError: If no AcoustID API key is available.
@@ -87,7 +87,7 @@ def run(video_path: Path, api_key: str | None = None) -> list[SegmentResult]:
             wav_path = tmp / f"seg_{seg.index}.wav"
             try:
                 extract_segment_audio(video_path, seg.start_time, seg.end_time, wav_path)
-            except Exception as exc:
+            except ExtractionError as exc:
                 logger.warning("Audio extraction failed for segment %d: %s", seg.index, exc)
                 results.append(result)
                 continue
@@ -111,6 +111,7 @@ def run(video_path: Path, api_key: str | None = None) -> list[SegmentResult]:
                     result.best_match = best
                     result.source = f"{best.artist} — {best.title}" if best.artist else best.title
                     result.confidence = best.score
+                    result.method = "audio"
                 else:
                     logger.warning(
                         "Low confidence match for segment %d: no results above %.1f",
@@ -124,6 +125,7 @@ def run(video_path: Path, api_key: str | None = None) -> list[SegmentResult]:
                 try:
                     extract_frame(video_path, midpoint, frame_path)
                     result.visual_hash = compute_phash(frame_path)
+                    result.method = "visual"
                     logger.debug(
                         "Visual fallback for segment %d: phash=%s",
                         seg.index, result.visual_hash,
@@ -136,27 +138,33 @@ def run(video_path: Path, api_key: str | None = None) -> list[SegmentResult]:
             results.append(result)
 
     logger.info("Pipeline complete: %d result(s)", len(results))
-    return results
+    return PipelineResult(
+        clip_path=str(video_path),
+        total_segments=len(segments),
+        matches=results,
+    )
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
     if len(sys.argv) < 2:
-        print("Usage: python -m traceback.pipeline <path_to_clip>")
+        print("Usage: python -m tb.pipeline <path_to_clip>")
         sys.exit(1)
 
     clip = Path(sys.argv[1])
-    segment_results = run(clip)
+    pipeline_result = run(clip)
 
     print(f"\nTraceback results for: {clip.name}")
     print("-" * 60)
-    for r in segment_results:
+    for r in pipeline_result.matches:
         seg = r.segment
         status = r.source or ("VISUAL_HASH" if r.visual_hash else "UNMATCHED")
         print(
             f"  Segment {seg.index:02d}  "
             f"{seg.start_time:6.1f}s – {seg.end_time:6.1f}s  "
             f"({seg.duration:.1f}s)  →  {status}  "
-            f"[confidence={r.confidence:.2f}]"
+            f"[confidence={r.confidence:.2f}]  [{r.method}]"
         )
+    print(f"\nAccuracy: {pipeline_result.accuracy:.0%} "
+          f"({pipeline_result.matched_count}/{pipeline_result.total_segments} matched)")
